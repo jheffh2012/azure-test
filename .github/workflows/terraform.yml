@@ -1,0 +1,78 @@
+name: Terraform Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+env:
+  ARM_CLIENT_ID:     ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID:     ${{ secrets.AZURE_TENANT_ID }}
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Detectar ambiente pela branch
+        id: set-env
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "::set-output name=env::PROD"
+          else
+            echo "::set-output name=env::DEV"
+          fi
+
+      - name: Exportar variáveis do ambiente correto
+        run: |
+          if [[ "${{ steps.set-env.outputs.env }}" == "PROD" ]]; then
+            echo "TF_VAR_environment=${{ secrets.TF_ENVIRONMENT_PROD }}" >> $GITHUB_ENV
+            echo "TF_BACKEND_KEY=${{ secrets.TF_BACKEND_KEY_PROD }}" >> $GITHUB_ENV
+            echo "TF_BACKEND_RG=${{ secrets.TF_BACKEND_RG_PROD }}" >> $GITHUB_ENV
+            echo "TF_BACKEND_STORAGE=${{ secrets.TF_BACKEND_STORAGE_PROD }}" >> $GITHUB_ENV
+            echo "TF_BACKEND_CONTAINER=${{ secrets.TF_BACKEND_CONTAINER_PROD }}" >> $GITHUB_ENV
+            echo "RG_NAME=${{ secrets.RG_NAME_PROD }}" >> $GITHUB_ENV
+            echo "LOCATION=${{ secrets.LOCATION_PROD }}" >> $GITHUB_ENV
+          else
+            echo "TF_VAR_environment=${{ secrets.TF_ENVIRONMENT_DEV }}" >> $GITHUB_ENV
+            echo "TF_BACKEND_KEY=${{ secrets.TF_BACKEND_KEY_DEV }}" >> $GITHUB_ENV
+            echo "TF_BACKEND_RG=${{ secrets.TF_BACKEND_RG_DEV }}" >> $GITHUB_ENV
+            echo "TF_BACKEND_STORAGE=${{ secrets.TF_BACKEND_STORAGE_DEV }}" >> $GITHUB_ENV
+            echo "TF_BACKEND_CONTAINER=${{ secrets.TF_BACKEND_CONTAINER_DEV }}" >> $GITHUB_ENV
+            echo "RG_NAME=${{ secrets.RG_NAME_DEV }}" >> $GITHUB_ENV
+            echo "LOCATION=${{ secrets.LOCATION_DEV }}" >> $GITHUB_ENV
+          fi
+
+      - name: Terraform Init
+        run: terraform init \
+          -backend-config="resource_group_name=${TF_BACKEND_RG}" \
+          -backend-config="storage_account_name=${TF_BACKEND_STORAGE}" \
+          -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
+          -backend-config="key=${TF_BACKEND_KEY}"
+      
+      - name: Gerar arquivo de variáveis Terraform
+        run: |
+          cat <<EOF > generated.auto.tfvars
+          key_vault_name       = "${{ secrets.KEY_VAULT_NAME }}"
+          environment          = "${{ steps.set-env.outputs.env }}"
+          location             = "${LOCATION}"
+          resource_group_name  = "${RG_NAME}"
+          aks_name             = "${{ secrets.AKS_NAME }}"
+          redis_name           = "${{ secrets.REDIS_NAME }}"
+          EOF
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
