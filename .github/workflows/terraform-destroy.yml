@@ -54,12 +54,18 @@ jobs:
             echo "LOCATION=${{ secrets.LOCATION_DEV }}" >> $GITHUB_ENV
           fi
 
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21'
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
       - name: Terraform Init
-        run: terraform init \
-          -backend-config="resource_group_name=${TF_BACKEND_RG}" \
-          -backend-config="storage_account_name=${TF_BACKEND_STORAGE}" \
-          -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
-          -backend-config="key=${TF_BACKEND_KEY}"
+        run: terraform init -backend-config="resource_group_name=${TF_BACKEND_RG}" -backend-config="storage_account_name=${TF_BACKEND_STORAGE}" -backend-config="container_name=${TF_BACKEND_CONTAINER}" -backend-config="key=${TF_BACKEND_KEY}"
       
       - name: Gerar arquivo de variáveis Terraform
         run: |
