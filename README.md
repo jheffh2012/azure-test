@@ -1,90 +1,101 @@
-# Guia de configuração após fork
+# Setup guide after fork
 
-Bem-vindo! Para rodar os workflows Terraform neste fork, siga as instruções:
+Welcome! To run the Terraform workflows in this fork, follow the instructions:
 
-## 1. Criar secrets no seu fork
+## 1. Create secrets in your fork
 
-Acesse:
+Go to:
 
 `Settings` > `Secrets and variables` > `Actions`
 
-Crie os seguintes secrets (valores de exemplo):
+Create the following secrets (example values):
 
-| Nome                   | Valor exemplo                 |
-|------------------------|------------------------------|
-| AZURE_CLIENT_ID        | sua service principal client id |
-| AZURE_CLIENT_SECRET    | sua service principal secret |
-| AZURE_SUBSCRIPTION_ID  | seu subscription id          |
-| AZURE_TENANT_ID        | seu tenant id                |
-| TF_ENVIRONMENT_DEV     | dev                          |
-| TF_ENVIRONMENT_PROD    | prod                         |
-| TF_BACKEND_KEY_DEV     | dev/terraform.tfstate        |
-| TF_BACKEND_KEY_PROD    | prod/terraform.tfstate       |
-| TF_BACKEND_RG          | nome do resource group backend |
-| TF_BACKEND_STORAGE     | nome do storage account      |
-| TF_BACKEND_CONTAINER   | nome do container            |
+| Name                   | Example value                   |
+|------------------------|---------------------------------|
+| AZURE_CLIENT_ID        | your service principal client id |
+| AZURE_CLIENT_SECRET    | your service principal secret    |
+| AZURE_SUBSCRIPTION_ID  | your subscription id            |
+| AZURE_TENANT_ID        | your tenant id                  |
+| TF_ENVIRONMENT_DEV     | dev                             |
+| TF_ENVIRONMENT_PROD    | prod                            |
+| TF_BACKEND_KEY_DEV     | dev/terraform.tfstate           |
+| TF_BACKEND_KEY_PROD    | prod/terraform.tfstate          |
+| TF_BACKEND_RG          | backend resource group name      |
+| TF_BACKEND_STORAGE     | storage account name            |
+| TF_BACKEND_CONTAINER   | container name                  |
 
-## 2. Executar workflow de deploy
+## 2. Run deploy workflow
 
-- Vá em **Actions** > **Terraform Deploy**
-- Clique em **Run workflow**
-- Escolha a branch (`main` para produção, `dev` para desenvolvimento)
-- O workflow usará os secrets corretos e aplicará as mudanças automaticamente
+- Go to **Actions** > **Terraform Deploy**
+- Click **Run workflow**
+- Choose the branch (`main` for production, `dev` for development)
+- The workflow will use the correct secrets and apply the changes automatically
 
-## 3. Executar workflow de destruição
+## 3. Run destroy workflow
 
-- Vá em **Actions** > **Terraform Destroy**
-- Clique em **Run workflow**
-- Escolha a branch para definir o ambiente (`main` ou `dev`)
-- O workflow destruirá os recursos do ambiente correspondente
+- Go to **Actions** > **Terraform Destroy**
+- Click **Run workflow**
+- Choose the branch to set the environment (`main` or `dev`)
+- The workflow will destroy the resources for the corresponding environment
 
 ---
 
-## 4. Rodar localmente
+## 4. Run locally
 
-### Pré-requisitos
+### Prerequisites
 
-- Instale o [Terraform](https://learn.hashicorp.com/tutorials/terraform/install-cli)
-- Configure [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) e faça login (`az login`)
+- Install [Terraform](https://learn.hashicorp.com/tutorials/terraform/install-cli)
+- Set up [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and log in (`az login`)
 
-### Passos
+### Steps
 
-1. Exporte as variáveis de ambiente (exemplo para ambiente dev):
+1. Export the environment variables (example for dev environment):
 
 ```bash
 export ARM_CLIENT_ID=""
 export ARM_CLIENT_SECRET=""
-set ARM_SUBSCRIPTION_ID=""
-set ARM_TENANT_ID=""
+export ARM_SUBSCRIPTION_ID=""
+export ARM_TENANT_ID=""
 
-set TF_VAR_environment="dev"
+export TF_VAR_environment="dev"
 
-set TF_BACKEND_RG="tr"
-set TF_BACKEND_STORAGE="jrksistemasstates"
-set TF_BACKEND_CONTAINER="dev"
-set TF_BACKEND_KEY="terraform/terraform.tfstate"
+export TF_BACKEND_RG="tr"
+export TF_BACKEND_STORAGE=""
+export TF_BACKEND_CONTAINER=""
+export TF_BACKEND_KEY="terraform/terraform.tfstate"
 ```
 
-2. Inicialize o Terraform:
+2. Initialize Terraform:
 
 ```bash
-terraform init -backend-config="resource_group_name=%TF_BACKEND_RG%" -backend-config="storage_account_name=%TF_BACKEND_STORAGE%"  -backend-config="container_name=%TF_BACKEND_CONTAINER%" -backend-config="key=%TF_BACKEND_KEY%"
+terraform init \
+  -backend-config="resource_group_name=$TF_BACKEND_RG" \
+  -backend-config="storage_account_name=$TF_BACKEND_STORAGE" \
+  -backend-config="container_name=$TF_BACKEND_CONTAINER" \
+  -backend-config="key=$TF_BACKEND_KEY"
 ```
 
-3. Execute o plano:
+3. Run the plan:
 
 ```bash
 terraform plan -out=tfplan
 ```
 
-4. Aplique as mudanças:
+4. Apply the changes:
 
 ```bash
 terraform apply tfplan
 ```
 
-5. (Opcional) Para destruir o ambiente::
+5. (Optional) To destroy the environment:
 
 ```bash
 terraform destroy -auto-approve
 ```
+
+6. Next steps
+
+- Add tests in the environment:
+    - Terratest;
+    - Checkov;
+    - InSpec;
