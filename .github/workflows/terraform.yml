@@ -2,9 +2,9 @@ name: Terraform Deploy
 
 on:
   push:
-    branches:
-      - main
-      - dev
+    # branches:
+    #   - main
+    #   - dev
   workflow_dispatch:
 
 env:

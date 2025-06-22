@@ -40,4 +40,16 @@ output "kubeconfig" {
   value       = azurerm_kubernetes_cluster.main.kube_config_raw
   sensitive   = true
   description = "Kubeconfig para usar com kubectl"
-} 
+}
+
+output "csi_client_id" {
+  value       = azurerm_kubernetes_cluster.main.key_vault_secrets_provider[0].secret_identity[0].client_id
+  sensitive   = false
+  description = "Client ID do Key Vault Secrets Provider"
+}
+
+output "csi_object_id" {
+  value       = azurerm_kubernetes_cluster.main.key_vault_secrets_provider[0].secret_identity[0].object_id
+  sensitive   = false
+  description = "Object ID do Key Vault Secrets Provider"
+}
